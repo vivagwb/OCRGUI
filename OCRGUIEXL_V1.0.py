@@ -8,10 +8,12 @@ from PIL import ImageGrab
 from PIL import Image
 import io
 from threading import Thread
-from wx.lib.pubsub import pub
+from pubsub import pub
+#from wx.lib.pubsub import pub
 import filetype
 import  time
 import requests
+import os
 
 
 
@@ -35,7 +37,7 @@ def get_file_content(filePath):
            return fp.read()
 
 #创建一个单独线程用于调用百度OCG，避免调用时间过长导致界面卡顿
-class threadocg(Thread):
+class threadocr(Thread):
 
     def __init__(self):
         """Init Worker Thread Class."""
@@ -63,7 +65,7 @@ class threadocg(Thread):
                      try:
                         for i in  range(5):
                              print(i)
-                             time.sleep(2)
+                             time.sleep(4)
                              optiontype={'result_type':'excel'}
                              resultexcel=client.getTableRecognitionResult(requestid,optiontype)
                              print(resultexcel)
@@ -72,14 +74,22 @@ class threadocg(Thread):
                                      contents.SetValue(resultexcel['error_msg'])
 
                              else:
-
+                                 if resultexcel.get('result')['ret_msg']=="已完成":
                                      resultexcelurl=resultexcel.get('result')['result_data']
-                                     wx.CallAfter(pub.sendMessage,'update',re_msg="以下为识别内容的下载链接")
-                                     wx.CallAfter(pub.sendMessage,'update',re_msg=resultexcelurl)
+                                     wx.CallAfter(pub.sendMessage,'update',re_msg="以下为excel文件保存目录")
+                                     wx.CallAfter(pub.sendMessage,'update',re_msg=os.getcwd())
                                      downwork=requests.get(resultexcelurl)
-                                     with open(r'C:\Users\Administrator\Desktop\银行维护\data.xls','wb') as data:
+                                     with open(r'data.xls','wb') as data:
                                          data.write(downwork.content)
                                      break
+                                 else:
+
+                                     if i==4:
+                                         print('超时，请重试')
+                                         wx.CallAfter(pub.sendMessage,'update',re_msg='超时，请重试')
+                                     continue
+
+
 
                      except:
                          print('发生错误2')
@@ -99,7 +109,7 @@ class MyForm(wx.Frame):
     #-------------------------------------------------------------------
     #set the window layout
     def __init__(self):
-        wx.Frame.__init__(self, None, wx.ID_ANY, "OCR程序", size =(410,335))
+        wx.Frame.__init__(self, None, wx.ID_ANY, "OCR_EXCEL程序", size =(410,335))
         global filename,contents,get_file_content,imgmark
         imgmark=""
 #app=wx.App()
@@ -109,7 +119,7 @@ class MyForm(wx.Frame):
         loadButton=wx.Button(bkg,label='选择文件')
         loadButton.Bind(wx.EVT_BUTTON,self.choose)
 
-        ocrButton=wx.Button(bkg,label='识别文字')
+        ocrButton=wx.Button(bkg,label='识别表格图片')
         ocrButton.Bind(wx.EVT_BUTTON,self.OCR)
 
         clipButton=wx.Button(bkg,label="获取剪贴板")
@@ -191,12 +201,12 @@ class MyForm(wx.Frame):
             image=imagefile.read()
             #@timeout_decorator.timeout(10,use_signals=False)
             contents.AppendText("请稍等\n\n")
-            threadocg()
+            threadocr()
 
         elif imgmark== "已选取图片":
             image = get_file_content(filename.GetValue())
             contents.AppendText("请稍等\n\n")
-            threadocg()
+            threadocr()
 
         else:
             contents.SetValue("请选择图片或粘贴图片\n\n")
