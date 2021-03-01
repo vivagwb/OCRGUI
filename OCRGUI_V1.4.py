@@ -8,7 +8,7 @@ from PIL import ImageGrab
 from PIL import Image
 import io
 from threading import Thread
-from wx.lib.pubsub import pub
+from pubsub import pub
 import filetype
 
 
