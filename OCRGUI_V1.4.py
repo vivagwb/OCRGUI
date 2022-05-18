@@ -1,6 +1,6 @@
 
 #V1.4 创建一个单独线程用于调用百度OCR接口，避免调用时间过长导致界面程序卡顿
-
+#识别内容自动写入剪贴板
 
 import wx
 from aip import AipOcr
@@ -10,6 +10,7 @@ import io
 from threading import Thread
 from pubsub import pub
 import filetype
+import pyperclip
 
 
 
@@ -62,6 +63,11 @@ class threadocg(Thread):
                      OutPutOCRtext='\n'.join(OCRtext)
                  wx.CallAfter(pub.sendMessage,'update',re_msg="以下为识别内容")
                  wx.CallAfter(pub.sendMessage,'update',re_msg=OutPutOCRtext)
+                 try:
+                    pyperclip.copy(OutPutOCRtext)
+                    wx.CallAfter(pub.sendMessage,'update',re_msg="识别内容已经写入剪贴板，可直接粘贴")
+                 except:
+                     wx.CallAfter(pub.sendMessage, 'update', re_msg="识别内容写入剪贴板失败")
 
              except:
                  print('发生错误')
