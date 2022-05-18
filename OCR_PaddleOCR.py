@@ -11,7 +11,9 @@ from PIL import ImageGrab
 from PIL import Image
 import numpy as np
 import os
+import sys
 
+sys.coinit_flags = 2
 
 
 class GUI(Frame):
@@ -19,7 +21,7 @@ class GUI(Frame):
         Frame.__init__(self,parent,**kwargs)
         self.config(height=500,width=300,bg="white")
         self.pack()
-        self.dataqueue=queue.Queue()
+        self.dataqueue=queue.Queue(maxsize=100)
         #self.var=StringVar()
         #openfile=lambda buttonReturn=askopenfilename:self.fileOCR(buttonReturn)
         self.FileOCRButton=Button(self,text="本地图片识别",command=self.filemakethread)
@@ -35,7 +37,7 @@ class GUI(Frame):
 
     def contentDisplay(self):
         try:
-            data=self.dataqueue.get(block=True)
+            data=self.dataqueue.get(block=False)
         except queue.Empty:
             pass
         else:
@@ -49,8 +51,8 @@ class GUI(Frame):
         filepath = askopenfilename()
         filekind=filetype.guess_extension(filepath)
         if filekind in ['jpg','png','bmp']:
-            filename=os.path.split(filepath)[1]
-            self.dataqueue.put("已获取本地图片文件:%s \n" % filename )
+            filename=os.path.split(filepath)
+            self.dataqueue.put("已获取本地图片文件: %s\n" % filename[1])
             contentR = []
             ocr = PaddleOCR(use_angle_cls=True)
             result = ocr.ocr(filepath, cls=True)
@@ -107,7 +109,6 @@ if __name__=="__main__":
     root=Tk()
     root.title("OCRPaddle")
     OCRGUI=GUI(root)
-
     OCRGUI.mainloop()
 
 
